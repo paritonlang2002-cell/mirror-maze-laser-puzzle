@@ -1,0 +1,861 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mirror Maze Laser Puzzle</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            padding: 25px 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #080808;
+            color: #ffffff;
+        }
+
+        .container {
+            width: min(100%, 850px);
+            padding: 25px;
+            background: #151515;
+            border: 1px solid #303030;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 27px;
+            font-weight: 500;
+        }
+
+        .subtitle {
+            margin-bottom: 22px;
+            text-align: center;
+            color: #999999;
+            font-size: 14px;
+        }
+
+        .game-board {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1.25;
+            max-height: 520px;
+            overflow: hidden;
+            background-color: #101a26;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+            background-size: 40px 40px;
+            border: 1px solid #344454;
+            border-radius: 12px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .instructions {
+            margin-top: 18px;
+            padding: 15px;
+            background: #202020;
+            border: 1px solid #333333;
+            border-radius: 10px;
+            color: #bbbbbb;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .instructions strong {
+            color: #ffffff;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .stat-card {
+            padding: 14px 8px;
+            text-align: center;
+            background: #202020;
+            border: 1px solid #333333;
+            border-radius: 10px;
+        }
+
+        .stat-card p {
+            margin-bottom: 7px;
+            color: #999999;
+            font-size: 12px;
+        }
+
+        .stat-card h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .fire-btn {
+            background: #1688e8;
+            color: white;
+        }
+
+        .reset-btn {
+            background: #333333;
+            color: white;
+        }
+
+        .rotate-btn {
+            background: #8056d9;
+            color: white;
+        }
+
+        .clear-btn {
+            background: #9c4141;
+            color: white;
+        }
+
+        .status {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 15px;
+            color: #68c8ff;
+            min-height: 20px;
+        }
+
+        .level {
+            margin-top: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .level label {
+            color: #aaaaaa;
+            font-size: 14px;
+        }
+
+        select {
+            padding: 9px 12px;
+            background: #252525;
+            color: white;
+            border: 1px solid #444444;
+            border-radius: 7px;
+            outline: none;
+        }
+
+        @media (max-width: 550px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .game-board {
+                aspect-ratio: 1 / 1;
+            }
+
+            .stats {
+                gap: 7px;
+            }
+
+            .stat-card h2 {
+                font-size: 16px;
+            }
+
+            button {
+                padding: 11px 13px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <h1>Mirror Maze Laser Puzzle</h1>
+
+        <p class="subtitle">Reflect the laser beam and hit the target</p>
+
+        <section class="game-board">
+            <canvas id="gameCanvas"></canvas>
+        </section>
+
+        <section class="stats">
+
+            <div class="stat-card">
+                <p>Mirrors Placed</p>
+                <h2 id="mirrorCount">0 / 5</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Laser Reflections</p>
+                <h2 id="reflectionCount">0</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Level</p>
+                <h2 id="levelDisplay">1</h2>
+            </div>
+
+        </section>
+
+        <div class="instructions">
+            <strong>How to Play</strong><br>
+            Click an empty grid cell to place a mirror. Select a mirror to rotate it by 45°. Direct the laser beam towards the target. Press Fire to test your solution.
+        </div>
+
+        <div class="level">
+
+            <label for="levelSelect">Choose Level</label>
+
+            <select id="levelSelect">
+                <option value="1">Level 1 - Beginner</option>
+                <option value="2">Level 2 - Intermediate</option>
+                <option value="3">Level 3 - Advanced</option>
+                <option value="4">Level 4 - Expert</option>
+            </select>
+
+        </div>
+
+        <div class="controls">
+
+            <button class="fire-btn" onclick="fireLaser()">
+                Fire Laser
+            </button>
+
+            <button class="rotate-btn" onclick="rotateSelectedMirror()">
+                Rotate Mirror
+            </button>
+
+            <button class="clear-btn" onclick="removeSelectedMirror()">
+                Remove Mirror
+            </button>
+
+            <button class="reset-btn" onclick="resetLevel()">
+                Reset Level
+            </button>
+
+        </div>
+
+        <p class="status" id="status">Place your mirrors to guide the laser!</p>
+
+    </main>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const mirrorCountElement = document.getElementById("mirrorCount");
+        const reflectionCountElement = document.getElementById("reflectionCount");
+        const levelDisplayElement = document.getElementById("levelDisplay");
+        const statusElement = document.getElementById("status");
+        const levelSelect = document.getElementById("levelSelect");
+
+        const gridSize = 40;
+        const columns = 16;
+        const rows = 12;
+
+        const boardWidth = columns * gridSize;
+        const boardHeight = rows * gridSize;
+
+        let mirrors = [];
+        let selectedMirror = -1;
+        let currentLevel = 1;
+        let maxMirrors = 5;
+
+        let laserPath = [];
+        let reflectionCount = 0;
+        let laserActive = false;
+        let gameWon = false;
+
+        let animationFrame = 0;
+        let laserProgress = 0;
+
+        let startPoint = { x: 1, y: 6 };
+        let targetPoint = { x: 14, y: 6 };
+
+        const levels = {
+            1: {
+                start: { x: 1, y: 6 },
+                target: { x: 14, y: 6 },
+                mirrors: 5
+            },
+
+            2: {
+                start: { x: 1, y: 10 },
+                target: { x: 14, y: 2 },
+                mirrors: 5
+            },
+
+            3: {
+                start: { x: 1, y: 2 },
+                target: { x: 14, y: 10 },
+                mirrors: 6
+            },
+
+            4: {
+                start: { x: 1, y: 6 },
+                target: { x: 14, y: 6 },
+                mirrors: 7
+            }
+        };
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const pixelRatio = window.devicePixelRatio || 1;
+
+            canvas.width = rect.width * pixelRatio;
+            canvas.height = rect.height * pixelRatio;
+
+            drawGame();
+        }
+
+        function getCellCenter(x, y) {
+            return {
+                x: x * gridSize + gridSize / 2,
+                y: y * gridSize + gridSize / 2
+            };
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = "rgba(255,255,255,0.07)";
+            ctx.lineWidth = 1;
+
+            for (let x = 0; x <= boardWidth; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, boardHeight);
+                ctx.stroke();
+            }
+
+            for (let y = 0; y <= boardHeight; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(boardWidth, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawSource() {
+            const point = getCellCenter(startPoint.x, startPoint.y);
+
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 13, 0, Math.PI * 2);
+            ctx.fillStyle = "#ff3d3d";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 19, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(255,61,61,0.35)";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 11px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("S", point.x, point.y + 4);
+        }
+
+        function drawTarget() {
+            const point = getCellCenter(targetPoint.x, targetPoint.y);
+
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 15, 0, Math.PI * 2);
+            ctx.fillStyle = gameWon ? "#35e88a" : "#27d9b0";
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 22, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(39,217,176,0.3)";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "#10221e";
+            ctx.font = "bold 13px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("T", point.x, point.y + 5);
+        }
+
+        function drawMirrors() {
+            mirrors.forEach((mirror, index) => {
+                const point = getCellCenter(mirror.x, mirror.y);
+
+                const angle = mirror.angle * Math.PI / 180;
+
+                const length = 25;
+
+                const dx = Math.cos(angle) * length;
+                const dy = Math.sin(angle) * length;
+
+                ctx.save();
+
+                ctx.lineCap = "round";
+                ctx.lineWidth = 7;
+                ctx.strokeStyle = index === selectedMirror ? "#ffffff" : "#79d9ff";
+
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = "#35aaff";
+
+                ctx.beginPath();
+                ctx.moveTo(point.x - dx, point.y - dy);
+                ctx.lineTo(point.x + dx, point.y + dy);
+                ctx.stroke();
+
+                ctx.restore();
+
+                if (index === selectedMirror) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 20, 0, Math.PI * 2);
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function drawLaser() {
+            if (laserPath.length < 2) {
+                return;
+            }
+
+            ctx.save();
+
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#ff3939";
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "#ff2929";
+            ctx.lineCap = "round";
+
+            ctx.beginPath();
+            ctx.moveTo(laserPath[0].x, laserPath[0].y);
+
+            for (let i = 1; i < laserPath.length; i++) {
+                ctx.lineTo(laserPath[i].x, laserPath[i].y);
+            }
+
+            ctx.stroke();
+
+            if (laserActive) {
+                const segmentCount = laserPath.length - 1;
+                const totalLength = getTotalPathLength();
+
+                let remainingDistance = laserProgress * totalLength;
+
+                for (let i = 0; i < segmentCount; i++) {
+                    const start = laserPath[i];
+                    const end = laserPath[i + 1];
+
+                    const length = Math.hypot(end.x - start.x, end.y - start.y);
+
+                    if (remainingDistance <= length) {
+                        const ratio = remainingDistance / length;
+
+                        const x = start.x + (end.x - start.x) * ratio;
+                        const y = start.y + (end.y - start.y) * ratio;
+
+                        ctx.beginPath();
+                        ctx.arc(x, y, 6, 0, Math.PI * 2);
+                        ctx.fillStyle = "#ffffff";
+                        ctx.shadowBlur = 18;
+                        ctx.shadowColor = "#ffffff";
+                        ctx.fill();
+
+                        break;
+                    }
+
+                    remainingDistance -= length;
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function getTotalPathLength() {
+            let total = 0;
+
+            for (let i = 0; i < laserPath.length - 1; i++) {
+                total += Math.hypot(
+                    laserPath[i + 1].x - laserPath[i].x,
+                    laserPath[i + 1].y - laserPath[i].y
+                );
+            }
+
+            return total;
+        }
+
+        function drawGame() {
+            const rect = canvas.getBoundingClientRect();
+
+            ctx.setTransform(
+                canvas.width / boardWidth,
+                0,
+                0,
+                canvas.height / boardHeight,
+                0,
+                0
+            );
+
+            ctx.clearRect(0, 0, boardWidth, boardHeight);
+
+            drawGrid();
+            drawLaser();
+            drawMirrors();
+            drawSource();
+            drawTarget();
+        }
+
+        function getLaserPath() {
+            const cellSize = gridSize;
+
+            let position = getCellCenter(startPoint.x, startPoint.y);
+
+            let direction = { x: 1, y: 0 };
+
+            let path = [position];
+
+            let reflections = 0;
+
+            let visited = new Set();
+
+            let hitTarget = false;
+
+            const maxSteps = 500;
+
+            for (let step = 0; step < maxSteps; step++) {
+                const nextPosition = {
+                    x: position.x + direction.x * cellSize,
+                    y: position.y + direction.y * cellSize
+                };
+
+                if (
+                    nextPosition.x < cellSize / 2 ||
+                    nextPosition.x > boardWidth - cellSize / 2 ||
+                    nextPosition.y < cellSize / 2 ||
+                    nextPosition.y > boardHeight - cellSize / 2
+                ) {
+                    path.push(nextPosition);
+                    break;
+                }
+
+                position = nextPosition;
+
+                path.push(position);
+
+                const gridX = Math.round((position.x - cellSize / 2) / cellSize);
+                const gridY = Math.round((position.y - cellSize / 2) / cellSize);
+
+                if (gridX === targetPoint.x && gridY === targetPoint.y) {
+                    hitTarget = true;
+                    break;
+                }
+
+                const mirrorIndex = mirrors.findIndex(mirror =>
+                    mirror.x === gridX && mirror.y === gridY
+                );
+
+                if (mirrorIndex !== -1) {
+                    const stateKey =
+                        `${gridX},${gridY},${direction.x},${direction.y}`;
+
+                    if (visited.has(stateKey)) {
+                        break;
+                    }
+
+                    visited.add(stateKey);
+
+                    const mirror = mirrors[mirrorIndex];
+
+                    const angle = mirror.angle * Math.PI / 180;
+
+                    const normal = {
+                        x: -Math.sin(angle),
+                        y: Math.cos(angle)
+                    };
+
+                    const dotProduct =
+                        direction.x * normal.x +
+                        direction.y * normal.y;
+
+                    direction = {
+                        x: direction.x - 2 * dotProduct * normal.x,
+                        y: direction.y - 2 * dotProduct * normal.y
+                    };
+
+                    direction.x = Math.round(direction.x);
+                    direction.y = Math.round(direction.y);
+
+                    reflections++;
+                }
+            }
+
+            return {
+                path: path,
+                reflections: reflections,
+                hitTarget: hitTarget
+            };
+        }
+
+        function fireLaser() {
+            if (laserActive || gameWon) {
+                return;
+            }
+
+            const result = getLaserPath();
+
+            laserPath = result.path;
+            reflectionCount = result.reflections;
+
+            reflectionCountElement.textContent = reflectionCount;
+
+            laserProgress = 0;
+            laserActive = true;
+
+            statusElement.textContent = "Laser beam activated...";
+
+            animateLaser(result.hitTarget);
+        }
+
+        function animateLaser(hitTarget) {
+            if (!laserActive) {
+                return;
+            }
+
+            laserProgress += 0.025;
+
+            drawGame();
+
+            if (laserProgress >= 1) {
+                laserActive = false;
+
+                if (hitTarget) {
+                    gameWon = true;
+
+                    statusElement.textContent =
+                        "Level completed! Target successfully hit!";
+
+                    if (currentLevel < 4) {
+                        statusElement.textContent +=
+                            " Select the next level to continue.";
+                    }
+                } else {
+                    statusElement.textContent =
+                        "Target missed! Adjust your mirrors and try again.";
+                }
+
+                drawGame();
+                return;
+            }
+
+            animationFrame = requestAnimationFrame(() => {
+                animateLaser(hitTarget);
+            });
+        }
+
+        function updateMirrorCount() {
+            mirrorCountElement.textContent =
+                mirrors.length + " / " + maxMirrors;
+        }
+
+        function rotateSelectedMirror() {
+            if (selectedMirror === -1 || gameWon) {
+                return;
+            }
+
+            mirrors[selectedMirror].angle =
+                (mirrors[selectedMirror].angle + 45) % 180;
+
+            laserPath = [];
+            reflectionCount = 0;
+
+            reflectionCountElement.textContent = "0";
+
+            statusElement.textContent = "Mirror rotated";
+
+            drawGame();
+        }
+
+        function removeSelectedMirror() {
+            if (selectedMirror === -1 || gameWon) {
+                return;
+            }
+
+            mirrors.splice(selectedMirror, 1);
+
+            selectedMirror = -1;
+
+            laserPath = [];
+
+            reflectionCount = 0;
+
+            reflectionCountElement.textContent = "0";
+
+            updateMirrorCount();
+
+            statusElement.textContent = "Mirror removed";
+
+            drawGame();
+        }
+
+        function handleCanvasClick(event) {
+            if (laserActive || gameWon) {
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+
+            const x = Math.floor(
+                ((event.clientX - rect.left) / rect.width) * columns
+            );
+
+            const y = Math.floor(
+                ((event.clientY - rect.top) / rect.height) * rows
+            );
+
+            const clickedMirror = mirrors.findIndex(mirror =>
+                mirror.x === x && mirror.y === y
+            );
+
+            if (clickedMirror !== -1) {
+                selectedMirror = clickedMirror;
+
+                statusElement.textContent =
+                    "Mirror selected. Rotate or remove it.";
+
+                drawGame();
+                return;
+            }
+
+            if (
+                (x === startPoint.x && y === startPoint.y) ||
+                (x === targetPoint.x && y === targetPoint.y)
+            ) {
+                return;
+            }
+
+            if (mirrors.length >= maxMirrors) {
+                statusElement.textContent = "Maximum mirrors reached";
+                return;
+            }
+
+            mirrors.push({
+                x: x,
+                y: y,
+                angle: 45
+            });
+
+            selectedMirror = mirrors.length - 1;
+
+            laserPath = [];
+
+            updateMirrorCount();
+
+            statusElement.textContent = "Mirror placed";
+
+            drawGame();
+        }
+
+        function resetLevel() {
+            cancelAnimationFrame(animationFrame);
+
+            mirrors = [];
+
+            selectedMirror = -1;
+
+            laserPath = [];
+
+            reflectionCount = 0;
+
+            laserProgress = 0;
+
+            laserActive = false;
+
+            gameWon = false;
+
+            reflectionCountElement.textContent = "0";
+
+            updateMirrorCount();
+
+            statusElement.textContent =
+                "Place your mirrors to guide the laser!";
+
+            drawGame();
+        }
+
+        function loadLevel(level) {
+            currentLevel = Number(level);
+
+            const settings = levels[currentLevel];
+
+            startPoint = settings.start;
+
+            targetPoint = settings.target;
+
+            maxMirrors = settings.mirrors;
+
+            levelDisplayElement.textContent = currentLevel;
+
+            resetLevel();
+        }
+
+        canvas.addEventListener("click", handleCanvasClick);
+
+        levelSelect.addEventListener("change", function () {
+            loadLevel(levelSelect.value);
+        });
+
+        window.addEventListener("resize", resizeCanvas);
+
+        resizeCanvas();
+
+        loadLevel(1);
+
+    </script>
+
+</body>
+
+</html>
